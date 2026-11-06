@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f6f7f3">
+    <title>Shell Yeah — Learn the command line</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='2') }}">
+    <script src="{{ url_for('static', filename='app.js', v='4') }}" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Shell Yeah home">
+        <span class="brand-mark">&gt;_</span>
+        <span>shell<span class="brand-accent">yeah</span></span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a class="nav-link active" href="#lessons">Learn</a>
+        <a class="nav-link" href="#cheatsheet">Cheatsheet</a>
+        <a class="nav-link" href="#terminal">Terminal <span class="live-dot"></span></a>
+      </nav>
+      <a class="top-cta" href="#terminal">Start practicing <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <main>
+      <section class="hero" id="lessons">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="eyebrow-line"></span> YOUR FRIENDLY CLI FIELD GUIDE</div>
+          <h1>Get comfy<br>with the <span>command line.</span></h1>
+          <p>Small commands. Big “I know what I’m doing” energy. Learn the essentials, then try them in a safe, in-browser terminal.</p>
+          <div class="hero-actions">
+            <a class="button button-dark" href="#lessons">Explore the lessons <span aria-hidden="true">↓</span></a>
+            <a class="text-link" href="#terminal"><span class="play-icon">▶</span> Jump into the terminal</a>
+          </div>
+          <div class="hero-note"><span class="sparkle">✳</span> No setup. No scary stuff. Just practice.</div>
+        </div>
+        <div class="hero-art" aria-label="Illustration of a terminal window">
+          <div class="orbit orbit-one"></div>
+          <div class="orbit orbit-two"></div>
+          <div class="art-spark spark-one">✳</div>
+          <div class="art-spark spark-two">✦</div>
+          <div class="terminal-illustration">
+            <div class="window-bar"><span></span><span></span><span></span><div class="window-label">your-terminal</div></div>
+            <div class="window-body">
+              <div><span class="prompt">$</span> <span class="command">whoami</span></div>
+              <div class="output">curious-human</div>
+              <div class="terminal-gap"><span class="prompt">$</span> <span class="command">learn --by-doing</span></div>
+              <div class="output success">✓ you're in the right place</div>
+              <div class="terminal-gap"><span class="prompt">$</span> <span class="cursor"></span></div>
+            </div>
+          </div>
+          <div class="art-sticker"><span>100%</span><br>learnable</div>
+        </div>
+      </section>
+
+      <section class="lesson-section section-wrap">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">THE FIELD GUIDE <span class="eyebrow-line"></span></div>
+            <h2>One command at a time.</h2>
+          </div>
+          <p>Pick up where your notes left off.<br><span>Pages 6–12 · beginner-friendly</span></p>
+        </div>
+        <div class="lesson-layout">
+          <div class="lesson-list" id="lesson-list" aria-label="Lessons"></div>
+          <article class="lesson-card" id="lesson-card" aria-live="polite"></article>
+        </div>
+      </section>
+
+      <section class="cheatsheet-section" id="cheatsheet">
+        <div class="section-wrap">
+          <div class="section-heading">
+            <div>
+              <div class="eyebrow">SAVE THIS FOR LATER <span class="eyebrow-line"></span></div>
+              <h2>Your pocket cheatsheet.</h2>
+            </div>
+            <p>The commands you’ll reach for<br><span>again and again.</span></p>
+          </div>
+          <div class="cheatsheet-grid">
+            <article class="cheat-card"><div class="cheat-icon icon-blue">⌂</div><div><h3>Find your way</h3><code>pwd</code><p>Show your current folder.</p><code>cd projects</code><p>Move into a folder. <code>cd ..</code> goes up.</p></div></article>
+            <article class="cheat-card"><div class="cheat-icon icon-yellow">＋</div><div><h3>Make things</h3><code>mkdir notes</code><p>Create a folder.</p><code>touch todo.txt</code><p>Create an empty file.</p></div></article>
+            <article class="cheat-card"><div class="cheat-icon icon-pink">⇄</div><div><h3>Move things</h3><code>cp a.txt b.txt</code><p>Copy a file.</p><code>mv a.txt notes/</code><p>Move or rename a file.</p></div></article>
+            <article class="cheat-card"><div class="cheat-icon icon-green">⌕</div><div><h3>Read & search</h3><code>cat notes.txt</code><p>Print a file’s contents.</p><code>grep "hey" notes.txt</code><p>Find matching lines.</p></div></article>
+            <article class="cheat-card vim-cheat"><div class="cheat-icon icon-lilac">✎</div><div><h3>Edit with vim</h3><code>vim notes.txt</code><p><kbd>i</kbd> insert · <kbd>Esc</kbd> normal</p><p><code>:w</code> save · <code>:q</code> quit · <code>:wq</code> save & quit</p></div></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="terminal-section section-wrap" id="terminal">
+        <div class="terminal-intro">
+          <div class="eyebrow">YOUR TURN <span class="eyebrow-line"></span></div>
+          <h2>Okay, you drive.</h2>
+          <p>Try a command. Make a mess. Start fresh. This practice terminal runs in your browser and never touches your real files.</p>
+          <div class="terminal-tip"><span>✦</span><p><strong>Try this:</strong><br><code>mkdir sandbox</code><br><code>cd sandbox</code><br><code>touch hello.txt</code></p></div>
+          <button class="reset-button" id="reset-terminal" type="button">↺ &nbsp;Reset practice files</button>
+        </div>
+        <div class="terminal-shell">
+          <div class="shell-top"><div class="shell-dots"><i></i><i></i><i></i></div><span class="shell-title">student@ shell-yeah: practice terminal</span><span class="shell-safe"><i></i> SIMULATED</span><button class="shell-control" id="reset-terminal-fullscreen" type="button" title="Reset practice files">↺ <span>Reset</span></button><button class="shell-control fullscreen-control" id="fullscreen-terminal" type="button" aria-label="Open terminal full screen" title="Open terminal full screen">⛶ <span>Full screen</span></button></div>
+          <div class="shell-screen" id="terminal-output" role="log" aria-live="polite" aria-label="Terminal output"></div>
+          <form class="shell-input-row" id="terminal-form" autocomplete="off">
+            <label for="terminal-input"><span class="shell-prompt">~</span> <span class="prompt-symbol">$</span></label>
+            <input id="terminal-input" type="text" spellcheck="false" aria-label="Enter a practice command" placeholder="type a command and press enter…" autofocus>
+          </form>
+          <div class="shell-footer"><span>↑ ↓ history · Tab complete · Ctrl+L clear</span><span>Try <code>help</code> to see all commands</span><span>browser-based sandbox</span></div>
+        </div>
+      </section>
+
+      <section class="final-note">
+        <div class="final-symbol">✳</div>
+        <h2>You did the thing.</h2>
+        <p>Every expert started with a blinking cursor. Keep exploring, keep breaking things (in the practice terminal), and you’ll get there.</p>
+        <a href="#lessons">Back to the lessons ↑</a>
+      </section>
+    </main>
+    <footer><a class="brand footer-brand" href="#lessons"><span class="brand-mark">&gt;_</span><span>shell<span class="brand-accent">yeah</span></span></a><span>Made for curious humans. &nbsp;·&nbsp; Keep it terminal.</span></footer>
+  </body>
+</html>
