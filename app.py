@@ -26,7 +26,10 @@ def redis_command(*parts):
     base_url = os.environ.get("UPSTASH_REDIS_REST_URL", "").rstrip("/")
     token = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
     if not base_url or not token:
-        raise RedisUnavailable("Upstash Redis is not configured.")
+        raise RedisUnavailable(
+            "Upstash Redis is not configured. Set UPSTASH_REDIS_REST_URL and "
+            "UPSTASH_REDIS_REST_TOKEN on the Flask server."
+        )
 
     path = "/".join(quote(str(part), safe="") for part in parts)
     req = Request(
@@ -38,7 +41,9 @@ def redis_command(*parts):
         with urlopen(req, timeout=5) as response:
             result = json.loads(response.read())
     except (URLError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError, ValueError):
-        raise RedisUnavailable("Upstash Redis request failed.") from None
+        raise RedisUnavailable(
+            "Upstash Redis request failed. Check the URL, token, and network connection."
+        ) from None
 
     if not isinstance(result, dict) or result.get("error") is not None:
         raise RedisUnavailable("Upstash Redis returned an invalid response.")
@@ -64,9 +69,9 @@ def read_player(phone):
     return {"name": data.get("name", ""), "points": points, "achievements": achievements}
 
 
-def redis_error():
-    app.logger.error("Upstash Redis request failed.")
-    return jsonify(error="Score storage is unavailable. Please try again later."), 503
+def redis_error(error):
+    app.logger.error("Upstash Redis request failed: %s", error)
+    return jsonify(error=str(error)), 503
 
 
 @app.get("/")
@@ -97,8 +102,8 @@ def login():
     try:
         redis_command("hset", player_key(phone), "phone", phone, "name", name)
         player = read_player(phone)
-    except RedisUnavailable:
-        return redis_error()
+    except RedisUnavailable as error:
+        return redis_error(error)
     return jsonify(phone=phone, **player)
 
 
@@ -128,10 +133,10 @@ def award():
             "eval", script, "1", player_key(phone), f"task:{task_id}", task_points
         )
         player = read_player(phone)
-    except RedisUnavailable:
-        return redis_error()
+    except RedisUnavailable as error:
+        return redis_error(error)
     if not isinstance(result, list) or len(result) != 2:
-        return redis_error()
+        return redis_error(RedisUnavailable("Upstash Redis returned invalid score data."))
     return jsonify(
         awarded=result[0] == 1,
         points=player["points"],

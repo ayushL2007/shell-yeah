@@ -25,7 +25,15 @@ No separate API wrapper or custom build command is needed.
 
 ## Scores and Upstash Redis
 
-Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in the local environment or in the Vercel project's environment variables. The terminal's `login +15551234567 "Ada Lovelace"` command uses the phone number as the player's identifier and stores the name and score in Upstash Redis. Phone numbers are not verified, so this is a game profile—not secure authentication. Collect phone numbers only with the player's consent. Login and score saving show an error when Redis is not configured or unavailable.
+Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` on the Flask server. In PowerShell, set them before starting Flask (replace the placeholders with the REST URL and token from your Upstash database):
+
+```powershell
+$env:UPSTASH_REDIS_REST_URL = "https://your-database.upstash.io"
+$env:UPSTASH_REDIS_REST_TOKEN = "your-upstash-rest-token"
+python app.py
+```
+
+In Vercel, add both as project environment variables and redeploy. The terminal's `login +15551234567 "Ada Lovelace"` command uses the phone number as the player's identifier and stores the name and score in Upstash Redis. Phone numbers are not verified, so this is a game profile—not secure authentication. Collect phone numbers only with the player's consent. Login and score saving show an error when Redis is not configured or unavailable.
 
 The simulated terminal awards each objective once per phone number: 10 points for `touch newfile.txt`, `mkdir destination`, and copying or moving `test.txt` into `destination`; 20 points for changing into `destination` and finding `hello` in `test.txt` with `grep -i`; and 20 points for saving an exact `#hello` line in `editme` with the practice editor.
 
