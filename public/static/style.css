@@ -104,6 +104,18 @@ kbd { padding: 2px 4px; border: 1px solid #dfe4da; border-radius: 4px; backgroun
 .terminal-tip > span { color: #83a74b; }
 .terminal-tip p { margin: 0; color: #64705e; font-size: 10px; line-height: 1.8; }
 .terminal-tip code { font: 10px var(--mono); }
+.score-panel { margin: 20px 0 15px; padding: 15px; border: 1px solid #e3e8dd; border-radius: 8px; background: white; }
+.score-heading { display: flex; align-items: center; justify-content: space-between; }
+.score-heading h3 { margin: 0; font-size: 13px; }
+.score-heading > strong { color: #577638; font: 600 11px var(--mono); }
+#player-status { margin: 8px 0 12px; color: #778177; font-size: 10px; line-height: 1.6; overflow-wrap: anywhere; }
+#player-status code { color: #567d2e; font: 9px var(--mono); }
+#task-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+#task-list li { display: grid; grid-template-columns: 14px 1fr auto; gap: 6px; align-items: start; color: #788277; font-size: 9px; line-height: 1.5; }
+#task-list li > span:first-child { color: #a4ad9e; }
+#task-list li > strong { white-space: nowrap; color: #788277; font: 9px var(--mono); }
+#task-list li.task-progress, #task-list li.task-progress > span:first-child { color: #a27a2f; }
+#task-list li.task-complete, #task-list li.task-complete > span:first-child, #task-list li.task-complete > strong { color: #648842; }
 .reset-button { padding: 0; border: 0; background: none; color: #71806d; font: 600 10px var(--sans); cursor: pointer; }
 .reset-button:hover { color: #425931; }
 .terminal-shell { overflow: hidden; border: 1px solid #435149; border-radius: 10px; background: #222e28; box-shadow: 0 17px 40px #26332e1b; }

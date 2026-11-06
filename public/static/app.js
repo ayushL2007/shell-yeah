@@ -86,6 +86,16 @@ let files;
 let directories;
 let editor = null;
 let commandCapture = null;
+const taskDefinitions = [
+  { id: "file-workflow", points: 10, label: "touch newfile.txt, mkdir destination, and copy or move test.txt into it" },
+  { id: "case-insensitive-search", points: 20, label: "cd destination and find hello in test.txt with grep -i" },
+  { id: "edit-file", points: 20, label: "Save #hello in the file editme" }
+];
+let taskSteps = { touchedFile: false, madeDirectory: false, placedTest: false, visitedDestination: false };
+let taskProgress = { "file-workflow": false, "case-insensitive-search": false, "edit-file": false };
+let completedTasks = new Set();
+let awardsInFlight = new Set();
+let player = null;
 
 function resetFilesystem() {
   cwd = initialPath;
@@ -95,9 +105,12 @@ function resetFilesystem() {
     ["/home/student/notes.txt", "remember to practice\nsmall steps make progress\nhello, terminal!\ngood morning, practice time."],
     ["/home/student/ideas.txt", "learn the command line\nmake a tiny project\nsearch for good ideas"],
     ["/home/student/guide.txt", "shell basics\ntry a small todo list\npractice every day"],
+    ["/home/student/test.txt", "HELLO from the practice file.\nSearch with grep -i hello test.txt."],
     ["/home/student/notes/field.txt", "hello from the notes folder\nsave your good ideas"]
   ]);
   directories = new Set(["/", "/home", initialPath, `${initialPath}/notes`]);
+  taskSteps = { touchedFile: false, madeDirectory: false, placedTest: false, visitedDestination: false };
+  taskProgress = { "file-workflow": false, "case-insensitive-search": false, "edit-file": false };
 }
 
 function normalize(path) {
@@ -129,6 +142,79 @@ function printLine(text = "", kind = "output-line") {
   line.textContent = text;
   output.append(line);
   output.scrollTop = output.scrollHeight;
+}
+
+function renderScoreboard() {
+  document.querySelector("#player-points").textContent = String(player?.points ?? 0);
+  document.querySelector("#player-status").textContent = player
+    ? `Logged in as ${player.name} (${player.phone}).`
+    : 'Run login <phone> "<name>" in the terminal to save your score.';
+  document.querySelector("#task-list").innerHTML = taskDefinitions.map(task => {
+    const complete = completedTasks.has(task.id);
+    const inProgress = !complete && taskProgress[task.id];
+    return `<li class="${complete ? "task-complete" : inProgress ? "task-progress" : ""}">
+      <span>${complete ? "✓" : inProgress ? "…" : "○"}</span>
+      <span>${escapeHtml(task.label)}</span>
+      <strong>${task.points} pts</strong>
+    </li>`;
+  }).join("");
+}
+
+async function postApi(path, body) {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "The request could not be completed.");
+  return data;
+}
+
+async function syncPendingAwards() {
+  if (!player) return;
+  const phone = player.phone;
+  for (const task of taskDefinitions) {
+    const requestId = `${phone}:${task.id}`;
+    if (!taskProgress[task.id] || completedTasks.has(task.id) || awardsInFlight.has(requestId)) continue;
+    awardsInFlight.add(requestId);
+    try {
+      const result = await postApi("/api/award", { phone, task: task.id });
+      if (player?.phone !== phone) continue;
+      player.points = result.points;
+      completedTasks = new Set(result.achievements);
+      renderScoreboard();
+      printLine(result.awarded
+        ? `Task complete: +${task.points} points (${player.points} total).`
+        : `Task already recorded (${player.points} total).`);
+    } catch (error) {
+      if (player?.phone === phone) {
+        printLine(`Could not save your points: ${error.message}`, "error-line");
+      }
+    } finally {
+      awardsInFlight.delete(requestId);
+    }
+  }
+}
+
+async function loginPlayer(phone, name) {
+  try {
+    const result = await postApi("/api/login", { phone, name });
+    player = { phone: result.phone, name: result.name, points: result.points };
+    completedTasks = new Set(result.achievements);
+    renderScoreboard();
+    printLine(`Logged in as ${player.name}. Current score: ${player.points} points.`);
+    await syncPendingAwards();
+  } catch (error) {
+    printLine(`Login failed: ${error.message}`, "error-line");
+  }
+}
+
+function checkTaskProgress() {
+  taskProgress["file-workflow"] =
+    taskSteps.touchedFile && taskSteps.madeDirectory && taskSteps.placedTest;
+  renderScoreboard();
+  void syncPendingAwards();
 }
 
 function printPrompt(command) {
@@ -174,11 +260,21 @@ function runCommandPart(command, stdinLines = null) {
 
   switch (cmd) {
     case "help":
-      printLine("Commands: pwd, cd, mkdir, touch, cat, cp, mv, grep, vim, ls, echo, history, clear, help");
+      printLine("Commands: login, pwd, cd, mkdir, touch, cat, cp, mv, grep, vim, ls, echo, history, clear, help");
       printLine("Shell operators: | pipe, && on success, || on failure, & background");
       printLine("Shortcuts: ll (ls -la), ↑/↓ history, Tab complete, Ctrl+L clear");
       printLine("Try: mkdir -p projects/demo && cd projects/demo");
+      printLine('Sign in to save points: login +15551234567 "Ada Lovelace"');
       break;
+    case "login": {
+      if (args.length < 2) {
+        printLine('Usage: login PHONE "YOUR NAME"', "error-line");
+        success = false;
+      } else {
+        void loginPlayer(args[0], args.slice(1).join(" "));
+      }
+      break;
+    }
     case "pwd": printLine(cwd); break;
     case "cd": {
       const target = args[0] === "-" ? previousCwd : args[0] ? argPath(args[0]) : initialPath;
@@ -186,6 +282,7 @@ function runCommandPart(command, stdinLines = null) {
       else {
         previousCwd = cwd;
         cwd = target;
+        if (cwd === `${initialPath}/destination`) taskSteps.visitedDestination = true;
         if (args[0] === "-") printLine(cwd);
       }
       break;
@@ -213,6 +310,9 @@ function runCommandPart(command, stdinLines = null) {
         } else if (ensureParent(path)) directories.add(path);
         else success = false;
       }
+      if (success && args.some(name => argPath(name) === `${initialPath}/destination`)) {
+        taskSteps.madeDirectory = true;
+      }
       break;
     }
     case "touch": {
@@ -226,6 +326,9 @@ function runCommandPart(command, stdinLines = null) {
         if (directories.has(path)) { printLine(`touch: is a directory: ${name}`, "error-line"); success = false; }
         else if (ensureParent(path) && !files.has(path)) files.set(path, "");
         else if (!directories.has(parent(path))) success = false;
+      }
+      if (success && args.some(name => argPath(name) === `${initialPath}/newfile.txt`)) {
+        taskSteps.touchedFile = true;
       }
       break;
     }
@@ -277,6 +380,9 @@ function runCommandPart(command, stdinLines = null) {
       if (!ensureParent(destination)) { success = false; break; }
       files.set(destination, files.get(source));
       if (cmd === "mv" && source !== destination) files.delete(source);
+      if (source === `${initialPath}/test.txt` && destination === `${initialPath}/destination/test.txt`) {
+        taskSteps.placedTest = true;
+      }
       break;
     }
     case "grep": {
@@ -317,6 +423,18 @@ function runCommandPart(command, stdinLines = null) {
         printLine("(no matches)");
         success = false;
       }
+      if (
+        found &&
+        ignoreCase &&
+        needle.toLowerCase() === "hello" &&
+        targetPath &&
+        targetPath === `${initialPath}/destination/test.txt` &&
+        taskSteps.placedTest &&
+        taskSteps.visitedDestination &&
+        cwd === `${initialPath}/destination`
+      ) {
+        taskProgress["case-insensitive-search"] = true;
+      }
       break;
     }
     case "vim": {
@@ -332,6 +450,7 @@ function runCommandPart(command, stdinLines = null) {
     case "echo": printLine(args.join(" ")); break;
     default: printLine(`${cmd}: command not found. Type help to see practice commands.`, "error-line"); success = false;
   }
+  checkTaskProgress();
   return success;
 }
 
@@ -441,6 +560,13 @@ function openEditor(path) {
     if (command === "w" || command === "wq") {
       files.set(path, textarea.value);
       status.textContent = "SAVED";
+      if (
+        basename(path) === "editme" &&
+        textarea.value.split(/\r?\n/).some(line => line.trim() === "#hello")
+      ) {
+        taskProgress["edit-file"] = true;
+        checkTaskProgress();
+      }
     }
     if (command === "q" || command === "wq") {
       if (command === "q" && textarea.value !== files.get(path)) {
@@ -504,7 +630,7 @@ input.addEventListener("keydown", event => {
     input.value = history[historyIndex] ?? "";
   } else if (event.key === "Tab") {
     event.preventDefault();
-    const known = ["pwd", "cd", "mkdir", "touch", "cat", "cp", "mv", "grep", "vim", "ls", "clear", "help"];
+    const known = ["login", "pwd", "cd", "mkdir", "touch", "cat", "cp", "mv", "grep", "vim", "ls", "clear", "help"];
     const match = known.find(command => command.startsWith(input.value));
     if (match) input.value = match;
   }
@@ -522,6 +648,7 @@ function resetTerminal() {
   editor = null;
   printLine("Practice workspace reset. You’re back in /home/student.");
   promptPath.textContent = "~";
+  renderScoreboard();
   input.focus();
 }
 
@@ -568,5 +695,6 @@ input.addEventListener("keydown", event => {
 });
 
 resetFilesystem();
+renderScoreboard();
 printLine("Welcome! This is a safe, simulated Linux terminal.");
 printLine("Try pwd, ls, cat welcome.txt, or type help to get started.");
