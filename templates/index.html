@@ -8,8 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='3') }}">
-    <script src="{{ url_for('static', filename='app.js', v='5') }}" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='4') }}">
+    <script src="{{ url_for('static', filename='app.js', v='6') }}" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -20,6 +20,7 @@
       <nav class="main-nav" aria-label="Main navigation">
         <a class="nav-link active" href="#lessons">Learn</a>
         <a class="nav-link" href="#cheatsheet">Cheatsheet</a>
+        <a class="nav-link" href="#leaderboard">Leaderboard</a>
         <a class="nav-link" href="#terminal">Terminal <span class="live-dot"></span></a>
       </nav>
       <a class="top-cta" href="#terminal">Start practicing <span aria-hidden="true">↗</span></a>
@@ -86,6 +87,20 @@
             <article class="cheat-card"><div class="cheat-icon icon-green">⌕</div><div><h3>Read & search</h3><code>cat notes.txt</code><p>Print a file’s contents.</p><code>grep "hey" notes.txt</code><p>Find matching lines.</p></div></article>
             <article class="cheat-card vim-cheat"><div class="cheat-icon icon-lilac">✎</div><div><h3>Edit with vim</h3><code>vim notes.txt</code><p><kbd>i</kbd> insert · <kbd>Esc</kbd> normal</p><p><code>:w</code> save · <code>:q</code> quit · <code>:wq</code> save & quit</p></div></article>
           </div>
+        </div>
+      </section>
+
+      <section class="leaderboard-section section-wrap" id="leaderboard">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">PRACTICE MAKES PROGRESS <span class="eyebrow-line"></span></div>
+            <h2>Leaderboard</h2>
+          </div>
+          <p>Top learners by points.<br><span>Keep practicing to climb the list.</span></p>
+        </div>
+        <div class="leaderboard-card" aria-live="polite">
+          <p id="leaderboard-status">Loading leaderboard…</p>
+          <ol id="leaderboard-list"></ol>
         </div>
       </section>
 

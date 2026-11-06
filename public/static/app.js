@@ -160,6 +160,29 @@ function renderScoreboard() {
   }).join("");
 }
 
+async function loadLeaderboard() {
+  const status = document.querySelector("#leaderboard-status");
+  const list = document.querySelector("#leaderboard-list");
+  try {
+    const response = await fetch("/api/leaderboard");
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Could not load the leaderboard.");
+    if (!Array.isArray(data.entries)) throw new Error("The leaderboard response was invalid.");
+    list.innerHTML = data.entries.map(entry => `
+      <li>
+        <span class="leaderboard-rank">${entry.rank}</span>
+        <span class="leaderboard-name">${escapeHtml(entry.name)}</span>
+        <strong>${Number(entry.points)} pts</strong>
+      </li>`).join("");
+    status.textContent = data.entries.length
+      ? "Phone numbers stay private. Sign in and earn points to appear here."
+      : "No scores yet. Sign in and complete a practice task to be first!";
+  } catch (error) {
+    status.textContent = `Leaderboard unavailable: ${error.message}`;
+    list.innerHTML = "";
+  }
+}
+
 async function postApi(path, body) {
   const response = await fetch(path, {
     method: "POST",
@@ -184,6 +207,7 @@ async function syncPendingAwards() {
       player.points = result.points;
       completedTasks = new Set(result.achievements);
       renderScoreboard();
+      void loadLeaderboard();
       printLine(result.awarded
         ? `Task complete: +${task.points} points (${player.points} total).`
         : `Task already recorded (${player.points} total).`);
@@ -203,6 +227,7 @@ async function loginPlayer(phone, name) {
     player = { phone: result.phone, name: result.name, points: result.points };
     completedTasks = new Set(result.achievements);
     renderScoreboard();
+    void loadLeaderboard();
     printLine(`Logged in as ${player.name}. Current score: ${player.points} points.`);
     await syncPendingAwards();
   } catch (error) {
@@ -696,5 +721,6 @@ input.addEventListener("keydown", event => {
 
 resetFilesystem();
 renderScoreboard();
+void loadLeaderboard();
 printLine("Welcome! This is a safe, simulated Linux terminal.");
 printLine("Try pwd, ls, cat welcome.txt, or type help to get started.");

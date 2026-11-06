@@ -97,6 +97,14 @@ h1 span { color: #7d9e45; }
 .cheat-card p { margin: 2px 0 5px; color: #828b84; font-size: 10px; line-height: 1.5; }
 kbd { padding: 2px 4px; border: 1px solid #dfe4da; border-radius: 4px; background: white; font: 9px var(--mono); }
 .vim-cheat { grid-column: span 2; }
+.leaderboard-section { padding-top: 72px; padding-bottom: 78px; }
+.leaderboard-card { max-width: 700px; margin: auto; padding: 20px 24px; border: 1px solid #e4e9e1; border-radius: 10px; background: white; }
+#leaderboard-status { margin: 0 0 14px; color: #7a857c; font-size: 11px; line-height: 1.6; }
+#leaderboard-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+#leaderboard-list li { display: grid; grid-template-columns: 35px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 7px; background: #f5f7f1; }
+.leaderboard-rank { color: #7a8d62; font: 11px var(--mono); }
+.leaderboard-name { overflow: hidden; color: var(--ink); font-size: 12px; font-weight: 600; text-overflow: ellipsis; }
+#leaderboard-list li > strong { color: #587a38; font: 11px var(--mono); }
 .terminal-section { display: grid; grid-template-columns: .72fr 1.28fr; align-items: center; gap: 52px; padding-top: 94px; padding-bottom: 95px; }
 .terminal-intro h2 { margin-top: 14px; font-size: 34px; }
 .terminal-intro > p { color: #727d77; font-size: 12px; line-height: 1.8; }
@@ -172,8 +180,10 @@ footer { display: flex; justify-content: space-between; align-items: center; pad
   .terminal-section { grid-template-columns: 1fr; gap: 28px; padding-top: 65px; padding-bottom: 65px; }
 }
 @media (max-width: 460px) {
-  .main-nav { gap: 10px; }
-  .nav-link { font-size: 10px; }
+  .main-nav { gap: 6px; }
+  .nav-link { font-size: 9px; }
+  .brand { gap: 6px; font-size: 16px; }
+  .brand-mark { width: 27px; height: 26px; font-size: 12px; }
   .hero { padding-left: 7%; padding-right: 7%; }
   h1 { font-size: 44px; }
   .hero-actions { align-items: flex-start; flex-direction: column; gap: 14px; }
@@ -188,6 +198,8 @@ footer { display: flex; justify-content: space-between; align-items: center; pad
   .cheatsheet-grid { grid-template-columns: 1fr; }
   .vim-cheat { grid-column: auto; }
   .shell-screen { height: 250px; }
+  .leaderboard-card { padding: 15px 12px; }
+  #leaderboard-list li { grid-template-columns: 25px 1fr auto; gap: 7px; padding: 9px; }
   .shell-footer span:last-child { display: none; }
   footer { padding: 18px 5%; }
 }
