@@ -17,6 +17,7 @@ TASK_POINTS = {
 }
 PLAYER_KEY_PREFIX = "shellyeah:player:"
 LEADERBOARD_KEY = "shellyeah:leaderboard"
+SUBMISSION_SEQUENCE_KEY = "shellyeah:submission-sequence"
 LEADERBOARD_LIMIT = 50
 
 
@@ -50,40 +51,6 @@ def redis_command(*parts):
     if not isinstance(result, dict) or result.get("error") is not None:
         raise RedisUnavailable("Upstash Redis returned an invalid response.")
     return result.get("result")
-
-
-def redis_pipeline(commands):
-    base_url = os.environ.get("UPSTASH_REDIS_REST_URL", "").rstrip("/")
-    token = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
-    if not base_url or not token:
-        raise RedisUnavailable(
-            "Upstash Redis is not configured. Set UPSTASH_REDIS_REST_URL and "
-            "UPSTASH_REDIS_REST_TOKEN on the Flask server."
-        )
-
-    req = Request(
-        f"{base_url}/pipeline",
-        data=json.dumps(commands).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
-    try:
-        with urlopen(req, timeout=5) as response:
-            results = json.loads(response.read())
-    except (URLError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError, ValueError):
-        raise RedisUnavailable(
-            "Upstash Redis request failed. Check the URL, token, and network connection."
-        ) from None
-
-    if not isinstance(results, list) or any(
-        not isinstance(item, dict) or item.get("error") is not None
-        for item in results
-    ):
-        raise RedisUnavailable("Upstash Redis returned invalid leaderboard data.")
-    return [item.get("result") for item in results]
 
 
 def player_key(phone):
@@ -139,6 +106,19 @@ def login():
         redis_command("hset", player_key(phone), "phone", phone, "name", name)
         player = read_player(phone)
         if player["points"] > 0:
+            redis_command(
+                "eval",
+                (
+                    "if redis.call('HGET', KEYS[1], 'submittedOrder') == false then "
+                    "local order = redis.call('INCR', KEYS[2]) "
+                    "redis.call('HSET', KEYS[1], 'submittedOrder', order) "
+                    "return order end "
+                    "return redis.call('HGET', KEYS[1], 'submittedOrder')"
+                ),
+                "2",
+                player_key(phone),
+                SUBMISSION_SEQUENCE_KEY,
+            )
             redis_command("zadd", LEADERBOARD_KEY, "GT", player["points"], phone)
     except RedisUnavailable as error:
         return redis_error(error)
@@ -148,25 +128,52 @@ def login():
 @app.get("/api/leaderboard")
 def leaderboard():
     try:
-        sorted_players = redis_command(
-            "zrevrange",
-            LEADERBOARD_KEY,
-            "0",
-            min(LEADERBOARD_LIMIT, max(1, request.args.get("limit", default=20, type=int) or 20)) - 1,
-            "WITHSCORES",
+        limit = min(
+            LEADERBOARD_LIMIT,
+            max(1, request.args.get("limit", default=20, type=int) or 20),
         )
-        if not isinstance(sorted_players, list) or len(sorted_players) % 2:
-            return redis_error(RedisUnavailable("Upstash Redis returned invalid leaderboard data."))
-        phones = sorted_players[::2]
-        names = redis_pipeline([["HGET", player_key(phone), "name"] for phone in phones])
+        entries = redis_command(
+            "eval",
+            (
+                "local players = redis.call('ZRANGE', KEYS[1], 0, -1, 'WITHSCORES') "
+                "local rows = {} "
+                "for i = 1, #players, 2 do "
+                "local phone = players[i] "
+                "local key = ARGV[1] .. phone "
+                "local order = redis.call('HGET', key, 'submittedOrder') "
+                "if not order then "
+                "order = redis.call('INCR', KEYS[2]) "
+                "redis.call('HSET', key, 'submittedOrder', order) "
+                "end "
+                "table.insert(rows, {phone, redis.call('HGET', key, 'name') or '', "
+                "tonumber(players[i + 1]), tonumber(order)}) "
+                "end "
+                "table.sort(rows, function(a, b) "
+                "if a[3] ~= b[3] then return a[3] > b[3] end "
+                "return a[4] < b[4] end) "
+                "local result = {} "
+                "for i = 1, math.min(tonumber(ARGV[2]), #rows) do "
+                "table.insert(result, {rows[i][1], rows[i][2], rows[i][3]}) "
+                "end "
+                "return result"
+            ),
+            "2",
+            LEADERBOARD_KEY,
+            SUBMISSION_SEQUENCE_KEY,
+            PLAYER_KEY_PREFIX,
+            limit,
+        )
     except RedisUnavailable as error:
         return redis_error(error)
 
-    if len(names) != len(phones):
+    if not isinstance(entries, list):
         return redis_error(RedisUnavailable("Upstash Redis returned invalid leaderboard data."))
 
     rows = []
-    for name, points in zip(names, sorted_players[1::2]):
+    for entry in entries:
+        if not isinstance(entry, list) or len(entry) != 3:
+            return redis_error(RedisUnavailable("Upstash Redis returned invalid leaderboard data."))
+        _, name, points = entry
         try:
             points = int(points)
         except (TypeError, ValueError):
@@ -195,15 +202,25 @@ def award():
         "if redis.call('HGET', KEYS[1], 'name') == false then return redis.error_reply('player not found') end "
         "local awarded = redis.call('HSETNX', KEYS[1], ARGV[1], '1') "
         "local points = redis.call('HGET', KEYS[1], 'points') or '0' "
-        "if awarded == 1 then points = redis.call('HINCRBY', KEYS[1], 'points', tonumber(ARGV[2])) end "
+        "if awarded == 1 then "
+        "points = redis.call('HINCRBY', KEYS[1], 'points', tonumber(ARGV[2])) "
+        "if redis.call('HGET', KEYS[1], 'submittedOrder') == false then "
+        "local order = redis.call('INCR', KEYS[2]) "
+        "redis.call('HSET', KEYS[1], 'submittedOrder', order) "
+        "end "
+        "elseif redis.call('HGET', KEYS[1], 'submittedOrder') == false and tonumber(points) > 0 then "
+        "local order = redis.call('INCR', KEYS[2]) "
+        "redis.call('HSET', KEYS[1], 'submittedOrder', order) "
+        "end "
         "return {awarded, points}"
     )
     try:
         result = redis_command(
             "eval",
             script,
-            "1",
+            "2",
             player_key(phone),
+            SUBMISSION_SEQUENCE_KEY,
             f"task:{task_id}",
             task_points,
         )

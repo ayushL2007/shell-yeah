@@ -33,7 +33,7 @@ $env:UPSTASH_REDIS_REST_TOKEN = "your-upstash-rest-token"
 python app.py
 ```
 
-In Vercel, add both as project environment variables and redeploy. The terminal's `login +15551234567 "Ada Lovelace"` command uses the phone number as the player's stable ID and stores the name and score in Upstash Redis. The leaderboard ranks scores by that ID but displays names and points only; it does not expose phone numbers. Phone numbers are not verified, so this is a game profile—not secure authentication. Collect phone numbers only with the player's consent. Login, score saving, and the leaderboard show an error when Redis is not configured or unavailable.
+In Vercel, add both as project environment variables and redeploy. The terminal's `login +15551234567 "Ada Lovelace"` command uses the phone number as the player's stable ID and stores the name and score in Upstash Redis. When scores tie, the player who first earned points ranks higher. The leaderboard uses phone numbers internally for stable identity and tie ordering, but displays names and points only. Phone numbers are not verified, so this is a game profile—not secure authentication. Collect phone numbers only with the player's consent. Login, score saving, and the leaderboard show an error when Redis is not configured or unavailable.
 
 The simulated terminal awards each objective once per phone number: 10 points for `touch newfile.txt`, `mkdir destination`, and copying or moving `test.txt` into `destination`; 20 points for changing into `destination` and finding `hello` in `test.txt` with `grep -i`; and 20 points for saving an exact `#hello` line in `editme` with the practice editor.
 
